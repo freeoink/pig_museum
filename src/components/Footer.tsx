@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { asset } from "../utils/asset";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -31,7 +32,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center mb-6">
               <img
-                src="/images/logo-footer.png?v=2"
+                src={asset("/images/logo-footer.png?v=2")}
                 alt="小猪博物馆"
                 className="h-8 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
               />

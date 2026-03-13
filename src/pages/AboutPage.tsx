@@ -1,3 +1,5 @@
+import { asset } from "../utils/asset";
+
 export default function AboutPage() {
   return (
     <div>
@@ -15,7 +17,7 @@ export default function AboutPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <div className="aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl">
-                <img src="/images/hero-pig.png" alt="馆长" className="w-full h-full object-contain p-8" />
+                <img src={asset("/images/hero-pig.png")} alt="馆长" className="w-full h-full object-contain p-8" />
               </div>
             </div>
 

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import CategoryAccordion from "../components/CategoryAccordion";
 import CollectionCard from "../components/CollectionCard";
 import { useAppContext } from "../contexts/AppContext";
+import { asset } from "../utils/asset";
 
 export default function HomePage() {
   const { categories, items, favorites, toggleFavorite } = useAppContext();
@@ -70,7 +71,7 @@ export default function HomePage() {
             <div className="relative flex justify-center lg:justify-end">
               <div className="hero-image relative w-64 h-64 lg:w-80 lg:h-80">
                 <img
-                  src="/images/logo-hero.png?v=2"
+                  src={asset("/images/logo-hero.png?v=2")}
                   alt="小猪博物馆"
                   className="w-full h-full object-contain animate-float"
                   style={{ filter: "drop-shadow(0 4px 12px rgba(107, 62, 38, 0.15))" }}

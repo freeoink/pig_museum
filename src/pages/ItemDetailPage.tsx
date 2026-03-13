@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import CollectionCard from "../components/CollectionCard";
 import { useAppContext } from "../contexts/AppContext";
+import { asset } from "../utils/asset";
 
 export default function ItemDetailPage() {
   const { itemId } = useParams();
@@ -37,7 +38,7 @@ export default function ItemDetailPage() {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <Link to="/" className="flex items-center">
-            <img src="/images/logo.png?v=2" alt="小猪博物馆" className="h-7 w-auto object-contain" />
+            <img src={asset("/images/logo.png?v=2")} alt="小猪博物馆" className="h-7 w-auto object-contain" />
           </Link>
         </div>
       </div>
@@ -62,7 +63,7 @@ export default function ItemDetailPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           <div className="space-y-4">
             <div className="relative aspect-square bg-white rounded-2xl overflow-hidden group shadow-sm">
-              <img src={currentImage} alt={item.name} className="item-image w-full h-full object-contain p-8" />
+              <img src={asset(currentImage)} alt={item.name} className="item-image w-full h-full object-contain p-8" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
               <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 text-white text-sm rounded-full">
                 {activeImageIndex + 1} / {images.length}
@@ -107,7 +108,7 @@ export default function ItemDetailPage() {
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <img src={image} alt={`${item.name}-${index + 1}`} className="item-image w-full h-full object-contain bg-gray-50 p-1" />
+                    <img src={asset(image)} alt={`${item.name}-${index + 1}`} className="item-image w-full h-full object-contain bg-gray-50 p-1" />
                   </button>
                 ))}
               </div>

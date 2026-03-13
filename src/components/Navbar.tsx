@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAppContext } from "../contexts/AppContext";
+import { asset } from "../utils/asset";
 
 const navItems = [
   { path: "/", label: "首页" },
@@ -29,7 +30,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center group">
               <img
-                src="/images/logo.png?v=2"
+                src={asset("/images/logo.png?v=2")}
                 alt="小猪博物馆"
                 className="h-7 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
               />

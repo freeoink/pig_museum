@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAppContext } from "../../contexts/AppContext";
+import { asset } from "../../utils/asset";
 
 const links = [
   { to: "/admin/items", label: "展品" },
@@ -26,7 +27,7 @@ export default function AdminLayout() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/images/logo.png?v=2" alt="小猪博物馆" className="h-7 w-auto" />
+            <img src={asset("/images/logo.png?v=2")} alt="小猪博物馆" className="h-7 w-auto" />
             <span className="font-semibold text-dark">后台管理</span>
           </div>
 

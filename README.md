@@ -18,11 +18,6 @@ npm run dev
 
 默认访问地址通常是：`http://127.0.0.1:5173`
 
-另外，`index.html` 已做兼容回退：
-
-- 用 `npm run dev` 时优先加载 `src` 源码。
-- 用 `python3 -m http.server 8080` 这类静态服务时，会自动回退到保留的 bundle 版本。
-
 ## 主要源码入口
 
 - `src/main.tsx`
@@ -56,3 +51,21 @@ npm run dev
 
 - 这是基于线上打包产物做的“结构化重建”，目标是后续可维护。
 - 原站未暴露 `source map`，所以无法 1:1 还原所有原始开发文件与注释。
+
+## GitHub Pages 部署
+
+仓库名是 `pig_museum` 时，已内置以下兼容：
+
+- `vite.config.ts` 在构建时使用 `base: /pig_museum/`
+- `src/main.tsx` 生产环境使用 `HashRouter`，避免刷新 404
+- 图片路径统一通过 `src/utils/asset.ts` 自动加 `BASE_URL`
+
+已提供自动部署工作流：
+
+- `.github/workflows/deploy-pages.yml`
+
+启用方式：
+
+1. GitHub 仓库 `Settings -> Pages`
+2. `Build and deployment` 里把 `Source` 设为 `GitHub Actions`
+3. push 到 `main` 后自动构建并发布

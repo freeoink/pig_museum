@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../../contexts/AppContext";
+import { asset } from "../../utils/asset";
 
 export default function LoginPage() {
   const { login, isAdminLoggedIn } = useAppContext();
@@ -19,7 +20,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 inline-block">
-            <img src="/images/logo-login.png?v=2" alt="小猪博物馆" className="h-14 w-auto object-contain" />
+            <img src={asset("/images/logo-login.png?v=2")} alt="小猪博物馆" className="h-14 w-auto object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-white">小猪博物馆</h1>
           <p className="text-white/80">后台管理系统</p>

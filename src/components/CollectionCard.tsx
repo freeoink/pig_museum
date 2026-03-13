@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { MuseumItem } from "../types";
+import { asset } from "../utils/asset";
 
 type Props = {
   item: MuseumItem;
@@ -38,7 +39,7 @@ export default function CollectionCard({ item, isFavorite, onToggleFavorite, sho
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         <Link to={`/item/${item.id}`}>
           <img
-            src={item.images[0]}
+            src={asset(item.images[0])}
             alt={item.name}
             className="item-image w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
           />
