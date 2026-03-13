@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import type { MuseumItem } from "../../types";
 import * as XLSX from "xlsx";
+import { asset } from "../../utils/asset";
 
 type ExcelRow = (string | number)[];
 type ExcelData = ExcelRow[];
@@ -164,11 +165,11 @@ export default function ItemsPage() {
             if (reader.result) {
               resolve(reader.result as string);
             } else {
-              resolve('/images/placeholder.png'); // 兜底
+              resolve(asset("/images/placeholder.png")); // 兜底
             }
           };
           // 4. 错误处理
-          reader.onerror = () => resolve('/images/placeholder.png');
+          reader.onerror = () => resolve(asset("/images/placeholder.png"));
           reader.readAsDataURL(file);
         })
       );
@@ -397,12 +398,12 @@ export default function ItemsPage() {
                     <div key={idx} className="relative border rounded overflow-hidden" style={{ aspectRatio: '1/1' }}>
                       {/* 修复图片渲染 */}
                       <img
-                        src={img || '/images/placeholder.png'}
+                        src={img || asset("/images/placeholder.png")}
                         alt={`预览${idx + 1}`}
                         className="w-full h-full object-contain bg-gray-50"
                         onError={(e) => {
                           console.error('图片加载失败:', img);
-                          e.currentTarget.src = '/images/placeholder.png';
+                          e.currentTarget.src = asset("/images/placeholder.png");
                         }}
                       />
                       {/* 修复删除按钮交互 */}
