@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import type { MuseumItem } from "../../types";
 import * as XLSX from "xlsx";
+import { asset } from "../../utils/asset";
 
 type ExcelRow = (string | number)[];
 type ExcelData = ExcelRow[];
+const PLACEHOLDER_IMAGE = "/images/placeholder.png";
 
 function createEmptyItem(): MuseumItem {
   return {
@@ -36,6 +38,16 @@ export default function ItemsPage() {
   const [excelData, setExcelData] = useState<ExcelData>([]);
   const [excelFileName, setExcelFileName] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+
+  const resolvePreviewImage = (src?: string) => {
+    if (!src) {
+      return asset(PLACEHOLDER_IMAGE);
+    }
+    if (/^(https?:)?\/\//.test(src) || src.startsWith("data:")) {
+      return src;
+    }
+    return asset(src);
+  };
 
   // 处理文件上传
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,10 +174,10 @@ export default function ItemsPage() {
             if (reader.result) {
               resolve(reader.result as string);
             } else {
-              resolve('/images/placeholder.png');
+              resolve(PLACEHOLDER_IMAGE);
             }
           };
-          reader.onerror = () => resolve('/images/placeholder.png');
+          reader.onerror = () => resolve(PLACEHOLDER_IMAGE);
           reader.readAsDataURL(file);
         })
       );
@@ -190,6 +202,21 @@ export default function ItemsPage() {
       return {
         ...prev,
         images: prev.images.filter((_, idx) => idx !== indexToRemove)
+      };
+    });
+  };
+
+  const handleSetAsPrimaryImage = (indexToMove: number) => {
+    setEditing((prev) => {
+      if (!prev || !Array.isArray(prev.images) || indexToMove <= 0 || indexToMove >= prev.images.length) {
+        return prev;
+      }
+      const nextImages = [...prev.images];
+      const [selected] = nextImages.splice(indexToMove, 1);
+      nextImages.unshift(selected);
+      return {
+        ...prev,
+        images: nextImages
       };
     });
   };
@@ -395,21 +422,87 @@ export default function ItemsPage() {
               {Array.isArray(editing.images) && editing.images.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {editing.images.map((img, idx) => (
-                    <div key={idx} className="relative border rounded overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                      <img
-                        src={img || '/images/placeholder.png'}
-                        alt={`预览${idx + 1}`}
-                        className="w-full h-full object-contain bg-gray-50"
-                        onError={(e) => { e.currentTarget.src = '/images/placeholder.png'; }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg text-lg font-bold z-20 cursor-pointer"
-                        title="删除此图片"
-                      >
-                        ×
-                      </button>
+                    <div key={idx} className="border rounded overflow-hidden bg-white">
+                      <div className="relative" style={{ aspectRatio: "1/1", overflow: "hidden" }}>
+                        <img
+                          src={resolvePreviewImage(img)}
+                          alt={`预览${idx + 1}`}
+                          className="w-full h-full object-contain bg-gray-50"
+                          onError={(e) => { e.currentTarget.src = asset(PLACEHOLDER_IMAGE); }}
+                        />
+                        {idx === 0 ? (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: 6,
+                              left: 6,
+                              padding: "2px 8px",
+                              borderRadius: 6,
+                              background: "#6B3E26",
+                              color: "#fff",
+                              fontSize: 12
+                            }}
+                          >
+                            首图
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div style={{ display: "flex", gap: 6, padding: 6 }}>
+                        {idx === 0 ? (
+                          <button
+                            type="button"
+                            disabled
+                            style={{
+                              flex: 1,
+                              border: "1px solid #d1d5db",
+                              borderRadius: 6,
+                              background: "#f3f4f6",
+                              color: "#6b7280",
+                              fontSize: 12,
+                              padding: "4px 8px",
+                              cursor: "not-allowed"
+                            }}
+                          >
+                            当前首图
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetAsPrimaryImage(idx)}
+                            style={{
+                              flex: 1,
+                              border: "1px solid #6B3E26",
+                              borderRadius: 6,
+                              background: "#fff7ed",
+                              color: "#6B3E26",
+                              fontSize: 12,
+                              padding: "4px 8px",
+                              cursor: "pointer"
+                            }}
+                            title="设为首图"
+                          >
+                            设为首图
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          style={{
+                            border: "1px solid #ef4444",
+                            borderRadius: 6,
+                            background: "#fee2e2",
+                            color: "#b91c1c",
+                            fontSize: 12,
+                            padding: "4px 10px",
+                            cursor: "pointer"
+                          }}
+                          title="删除此图片"
+                        >
+                          删除
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -417,7 +510,9 @@ export default function ItemsPage() {
               {Array.isArray(editing.images) && editing.images.length === 0 && (
                 <p className="text-sm text-gray-500 mt-2">暂无图片，请点击上方按钮选择图片上传</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">支持 JPG, PNG, GIF，可多选，图片将转换为 Base64 存储</p>
+              <p className="text-xs text-gray-500 mt-1">
+                支持 JPG, PNG, GIF，可多选，图片将转换为 Base64 存储。第 1 张会作为封面，可点击“设为首图”调整顺序。
+              </p>
             </div>
 
             {/* 国家 */}
