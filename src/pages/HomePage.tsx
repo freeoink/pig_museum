@@ -1,15 +1,27 @@
 import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import CategoryAccordion from "../components/CategoryAccordion";
 import CollectionCard from "../components/CollectionCard";
 import { useAppContext } from "../contexts/AppContext";
-import { asset } from "../utils/asset";
 
 export default function HomePage() {
   const { categories, items, favorites, toggleFavorite } = useAppContext();
   const recommended = items.filter((item) => item.isRecommended).slice(0, 8);
 
+  // 引入不蒜子脚本（只引入一次，避免重复）
+  const scriptLoaded = useRef(false);
+  useEffect(() => {
+    if (scriptLoaded.current) return;
+    scriptLoaded.current = true;
+    const script = document.createElement('script');
+    script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
   return (
     <div className="min-h-screen">
+      {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-[#FDF8F3] via-white to-[#6B3E26]/5">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-20 h-20 rounded-full bg-[#6B3E26]/10 animate-float" />
@@ -62,8 +74,12 @@ export default function HomePage() {
                   <p className="text-sm text-gray-500">合作艺术家</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-[#6B3E26]">12k+</p>
+                  {/* 不蒜子会自动填充这里的数字（站点总访问量 PV） */}
+                  <p className="text-3xl font-bold text-[#6B3E26]">
+                    <span id="busuanzi_value_site_pv"></span>
+                  </p>
                   <p className="text-sm text-gray-500">快乐访客</p>
+                  {/* 如需显示独立访客数，可将 id 改为 busuanzi_value_site_uv */}
                 </div>
               </div>
             </div>
@@ -71,7 +87,7 @@ export default function HomePage() {
             <div className="relative flex justify-center lg:justify-end">
               <div className="hero-image relative w-64 h-64 lg:w-80 lg:h-80">
                 <img
-                  src={asset("/images/logo-hero.png?v=2")}
+                  src="/images/logo-hero.png?v=2"
                   alt="小猪博物馆"
                   className="w-full h-full object-contain animate-float"
                   style={{ filter: "drop-shadow(0 4px 12px rgba(107, 62, 38, 0.15))" }}
@@ -90,6 +106,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Quick Links */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -113,6 +130,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Category Accordion */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
@@ -129,6 +147,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Recommended Items */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">

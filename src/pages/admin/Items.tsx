@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import type { MuseumItem } from "../../types";
 import * as XLSX from "xlsx";
-import { asset } from "../../utils/asset";
 
 type ExcelRow = (string | number)[];
 type ExcelData = ExcelRow[];
@@ -20,10 +19,10 @@ function createEmptyItem(): MuseumItem {
     description: "请输入藏品说明",
     status: "available",
     price: 0,
-    images: [], // 默认无图片（保持正确）
+    images: [],
     tags: [],
-    isRecommended: false, // 补充缺失的字段
-    isNew: false // 补充缺失的字段
+    isRecommended: false,
+    isNew: false
   };
 }
 
@@ -58,7 +57,7 @@ export default function ItemsPage() {
     reader.readAsBinaryString(file);
   };
 
-  // 将 Excel 行转换为 MuseumItem（修复 images 初始值）
+  // 将 Excel 行转换为 MuseumItem（已补充推荐/新品字段）
   const rowToItem = (row: ExcelRow): MuseumItem => {
     const [
       name = "",
@@ -70,8 +69,10 @@ export default function ItemsPage() {
       description = "",
       status = "collection",
       price = 0,
-      image = "", // 改为空字符串，避免强制塞默认图片
+      image = "",
       tagsStr = "",
+      isRecommended = "false",   // 新增：推荐标识，期望 "true"/"false"
+      isNew = "false",           // 新增：新品标识
     ] = row;
 
     return {
@@ -86,10 +87,10 @@ export default function ItemsPage() {
       description: String(description),
       status: (String(status) as MuseumItem["status"]) || "collection",
       price: Number(price) || 0,
-      images: image ? [String(image)] : [], // 修复：仅当有图片时才添加
+      images: image ? [String(image)] : [],
       tags: String(tagsStr).split(",").map(t => t.trim()).filter(Boolean),
-      isRecommended: false,
-      isNew: false,
+      isRecommended: String(isRecommended).toLowerCase() === "true",
+      isNew: String(isNew).toLowerCase() === "true",
     };
   };
 
@@ -139,20 +140,17 @@ export default function ItemsPage() {
     });
   };
 
-  // ---------- 多图片处理函数（核心修复） ----------
+  // 多图片处理函数
   const handleAddImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    // 1. 增加非空校验
     if (!files || files.length === 0 || !editing) {
       alert("请选择图片或确认当前处于编辑状态");
       return;
-      
     }
 
     const readers: Promise<string>[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // 2. 过滤非图片文件
       if (!file.type.startsWith('image/')) {
         alert(`文件 ${file.name} 不是图片，请重新选择`);
         continue;
@@ -161,22 +159,19 @@ export default function ItemsPage() {
         new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
-            // 3. 校验 Base64 结果
             if (reader.result) {
               resolve(reader.result as string);
             } else {
-              resolve(asset("/images/placeholder.png")); // 兜底
+              resolve('/images/placeholder.png');
             }
           };
-          // 4. 错误处理
-          reader.onerror = () => resolve(asset("/images/placeholder.png"));
+          reader.onerror = () => resolve('/images/placeholder.png');
           reader.readAsDataURL(file);
         })
       );
     }
 
     Promise.all(readers).then((base64Images) => {
-      // 5. 安全更新状态（移除非空断言，增加校验）
       setEditing(prev => {
         if (!prev) return null;
         return {
@@ -184,16 +179,12 @@ export default function ItemsPage() {
           images: [...(prev.images || []), ...base64Images]
         };
       });
-      // 清空 input 值，允许重复选择同一文件
       e.target.value = '';
     });
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    // 1. 增加完整校验
     if (!editing || !Array.isArray(editing.images)) return;
-    
-    // 2. 安全更新图片数组
     setEditing(prev => {
       if (!prev) return null;
       return {
@@ -202,9 +193,8 @@ export default function ItemsPage() {
       };
     });
   };
-  // ---------- 多图片处理结束 ----------
 
-  // 原有的搜索过滤
+  // 搜索过滤
   const filtered = useMemo(() => {
     const key = keyword.trim();
     if (!key) return items;
@@ -224,6 +214,9 @@ export default function ItemsPage() {
       {/* Excel 上传区域 */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h3 className="text-lg font-semibold">从 Excel 批量导入</h3>
+        <p className="text-xs text-gray-500">
+          Excel 表头顺序必须为：名称, 分类, 国家, 年代, 材质, 尺寸, 描述, 状态, 价格, 图片URL, 标签, 推荐(true/false), 新品(true/false)
+        </p>
         <input
           type="file"
           accept=".xlsx, .xls, .csv"
@@ -355,31 +348,40 @@ export default function ItemsPage() {
         </table>
       </div>
 
-      {/* 编辑表单（修复图片预览/删除） */}
-      {editing ? (
+      {/* 编辑表单（完整字段，已包含推荐/新品） */}
+      {editing && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <h3 className="text-lg font-semibold">编辑展品</h3>
           <div className="grid md:grid-cols-2 gap-4">
-            <input
-              className="px-3 py-2 rounded-lg border border-gray-200"
-              value={editing.name}
-              onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-              placeholder="名称"
-            />
-            <select
-              className="px-3 py-2 rounded-lg border border-gray-200"
-              value={editing.category}
-              onChange={(e) => setEditing({ ...editing, category: e.target.value })}
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            {/* 名称 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.name}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                placeholder="输入展品名称"
+              />
+            </div>
 
-            {/* 多图片上传区域 - 修复渲染问题 */}
-            <div className="col-span-2">
+            {/* 分类 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
+              <select
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.category}
+                onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 图片上传 */}
+            <div className="col-span-2 flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-1">图片（可多选）</label>
               <div className="flex items-center gap-4">
                 <input
@@ -390,23 +392,16 @@ export default function ItemsPage() {
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-base file:font-semibold file:bg-[#6B3E26] file:text-white hover:file:bg-[#5C3317]"
                 />
               </div>
-
-              {/* 图片预览列表 - 修复样式兼容性 */}
               {Array.isArray(editing.images) && editing.images.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {editing.images.map((img, idx) => (
                     <div key={idx} className="relative border rounded overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                      {/* 修复图片渲染 */}
                       <img
-                        src={img || asset("/images/placeholder.png")}
+                        src={img || '/images/placeholder.png'}
                         alt={`预览${idx + 1}`}
                         className="w-full h-full object-contain bg-gray-50"
-                        onError={(e) => {
-                          console.error('图片加载失败:', img);
-                          e.currentTarget.src = asset("/images/placeholder.png");
-                        }}
+                        onError={(e) => { e.currentTarget.src = '/images/placeholder.png'; }}
                       />
-                      {/* 修复删除按钮交互 */}
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
@@ -419,30 +414,135 @@ export default function ItemsPage() {
                   ))}
                 </div>
               )}
-              {/* 增加空状态提示 */}
               {Array.isArray(editing.images) && editing.images.length === 0 && (
                 <p className="text-sm text-gray-500 mt-2">暂无图片，请点击上方按钮选择图片上传</p>
               )}
               <p className="text-xs text-gray-500 mt-1">支持 JPG, PNG, GIF，可多选，图片将转换为 Base64 存储</p>
             </div>
 
-            <input
-              className="px-3 py-2 rounded-lg border border-gray-200"
-              value={editing.price}
-              onChange={(e) => setEditing({ ...editing, price: Number(e.target.value || 0) })}
-              placeholder="价格"
-              type="number" // 增加 type=number 防止非数字输入
-            />
+            {/* 国家 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">国家</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.country || ''}
+                onChange={(e) => setEditing({ ...editing, country: e.target.value })}
+                placeholder="例如：中国"
+              />
+            </div>
+
+            {/* 年代 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">年代</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.era || ''}
+                onChange={(e) => setEditing({ ...editing, era: e.target.value })}
+                placeholder="例如：清代 / 2020"
+              />
+            </div>
+
+            {/* 材质 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">材质</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.material || ''}
+                onChange={(e) => setEditing({ ...editing, material: e.target.value })}
+                placeholder="例如：青铜 / 陶瓷"
+              />
+            </div>
+
+            {/* 尺寸 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">尺寸</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.dimensions || ''}
+                onChange={(e) => setEditing({ ...editing, dimensions: e.target.value })}
+                placeholder="例如：30×20×10 cm"
+              />
+            </div>
+
+            {/* 状态 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
+              <select
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                value={editing.status}
+                onChange={(e) => setEditing({ ...editing, status: e.target.value as MuseumItem['status'] })}
+              >
+                <option value="available">可购</option>
+                <option value="sold">已售</option>
+                <option value="collection">珍藏</option>
+              </select>
+            </div>
+
+            {/* 价格 */}
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">价格</label>
+              <input
+                className="px-3 py-2 rounded-lg border border-gray-200"
+                type="number"
+                value={editing.price}
+                onChange={(e) => setEditing({ ...editing, price: Number(e.target.value || 0) })}
+                placeholder="0"
+              />
+            </div>
+
+            {/* 标签 */}
+            <div className="col-span-2 flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
+              <input
+                className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                placeholder="多个标签用英文逗号分隔，例如：瓷器, 官窑, 宋代"
+                value={editing.tags ? editing.tags.join(', ') : ''}
+                onChange={(e) => {
+                  const tagsStr = e.target.value;
+                  const tagsArray = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+                  setEditing({ ...editing, tags: tagsArray });
+                }}
+              />
+            </div>
+
+            {/* 推荐 + 新品 */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isRecommended"
+                  checked={editing.isRecommended || false}
+                  onChange={(e) => setEditing({ ...editing, isRecommended: e.target.checked })}
+                  className="w-4 h-4 text-[#6B3E26] border-gray-300 rounded focus:ring-[#6B3E26]"
+                />
+                <label htmlFor="isRecommended" className="text-sm text-gray-700">推荐</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isNew"
+                  checked={editing.isNew || false}
+                  onChange={(e) => setEditing({ ...editing, isNew: e.target.checked })}
+                  className="w-4 h-4 text-[#6B3E26] border-gray-300 rounded focus:ring-[#6B3E26]"
+                />
+                <label htmlFor="isNew" className="text-sm text-gray-700">新品</label>
+              </div>
+            </div>
+
+            {/* 描述 */}
+            <div className="col-span-2 flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+              <textarea
+                className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                rows={4}
+                value={editing.description}
+                onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                placeholder="输入展品详细描述"
+              />
+            </div>
           </div>
 
-          <textarea
-            className="w-full px-3 py-2 rounded-lg border border-gray-200"
-            rows={4}
-            value={editing.description}
-            onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-            placeholder="描述"
-          />
-
+          {/* 保存/取消按钮 */}
           <div className="flex items-center gap-2">
             <button
               className="px-4 py-2 rounded-lg bg-[#6B3E26] text-white"
@@ -458,12 +558,15 @@ export default function ItemsPage() {
             >
               保存
             </button>
-            <button className="px-4 py-2 rounded-lg border border-gray-200" onClick={() => setEditing(null)}>
+            <button
+              className="px-4 py-2 rounded-lg border border-gray-200"
+              onClick={() => setEditing(null)}
+            >
               取消
             </button>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
